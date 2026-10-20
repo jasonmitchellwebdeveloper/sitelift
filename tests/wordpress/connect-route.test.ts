@@ -185,6 +185,26 @@ describe("POST /api/wordpress/connect (current behavior)", () => {
     });
   });
 
+  it.each(["", "{not JSON"])("maps malformed incoming JSON %j to the current generic 400", async (body) => {
+    const malformedRequest = new NextRequest(
+      "https://sitelift.example/api/wordpress/connect",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+      },
+    );
+
+    const response = await POST(malformedRequest);
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      success: false,
+      message: "Unable to connect to WordPress. Check the site URL.",
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it.each([
     ["timeout", new DOMException("Synthetic timeout", "TimeoutError")],
     ["network failure", new TypeError("Synthetic network failure")],
