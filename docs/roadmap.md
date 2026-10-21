@@ -22,16 +22,17 @@ This pivot explicitly prioritizes getting a useful, defensible product online qu
 
 ### Slice 1: Working content import and preview
 
-- [ ] Define a **minimal typed SiteLift content schema**, including source identity, title, body and optional metadata; document version and missing-value policy.
-- [ ] Choose **one reliable, fixed public content API** with meaningful record data. Use a hardcoded/configured API origin and safe query parameters; no arbitrary URL fetching.
-- [ ] Include a clearly labelled bundled sample dataset so the app remains demonstrable without third-party uptime.
-- [ ] Build a simple, useful source-selection interface and trigger import.
-- [ ] Fetch a **bounded** number of records with timeout, no redirect following, response-size checks and safe validation.
-- [ ] Convert the source response to the canonical schema and display useful records with empty/loading/failure states.
-- [ ] Write focused tests for schema normalization, API error handling and route behaviour; run lint/build.
-- [ ] Open a reviewable PR. Prefer one coherent vertical slice over excessive infrastructure work.
+- [x] Define a **minimal typed SiteLift content schema**, including source identity, title, body and optional metadata; document version and missing-value policy.
+- [x] Choose **one reliable, fixed public content API** with meaningful record data. Use a hardcoded/configured API origin and safe query parameters; no arbitrary URL fetching.
+- [x] Include a clearly labelled bundled sample dataset so the app remains demonstrable without third-party uptime.
+- [x] Build a simple, useful source-selection interface and trigger import.
+- [x] Fetch a **bounded** number of records with timeout, no redirect following, response-size checks and safe validation.
+- [x] Convert the source response to the canonical schema and display useful records with empty/loading/failure states.
+- [x] Write focused tests for schema normalization, API error handling and route behaviour; run lint/build.
+- [x] Prepare one coherent, tested vertical slice on `feature/api-import` for PR review.
+- [ ] Owner review and merge of Slice 1. No automatic merge or public deployment.
 
-**Acceptance:** A visitor can open SiteLift, choose public API or sample data, import and see normalized content. No credentials required, no unrestricted fetch proxy.
+**Implemented on the feature branch, pending review:** A visitor can open SiteLift, choose public API or sample data, import and see normalized content. No credentials required, no unrestricted fetch proxy.
 
 ### Slice 2: Useful portable exports
 
@@ -89,7 +90,7 @@ This pivot explicitly prioritizes getting a useful, defensible product online qu
 ## How Codex should continue
 
 1. Confirm current branch and inspect relevant code, `AGENTS.md` and `docs/architecture.md`.
-2. After this documentation PR is merged, work on a **new branch from up-to-date main** for Slice 1. Do not let unmerged WordPress auth changes prevent progress.
+2. Slice 1 is implemented on `feature/api-import` from up-to-date main and awaits owner review. After it is merged, start Slice 2 only with approval. Keep the unmerged WordPress branch separate.
 3. For a clear, approved slice, make reasonable minor implementation decisions, implement, test and present results without requiring intermediary prompts from another AI.
 4. Ask the human before broadening scope, changing external-access security assumptions or deploying publicly.
 5. Create a PR for human review; do not merge it autonomously. The ChatGPT conversation can independently review GitHub PRs.

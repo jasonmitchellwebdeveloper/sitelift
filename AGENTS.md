@@ -18,7 +18,7 @@ SiteLift is a portfolio-quality **API content integration and exporter** for web
 
 - Stack: Next.js 16 App Router, React 19, TypeScript (strict), Node.js route handlers, pnpm. Prefer native platform features and the current stack; justify dependencies.
 - Read `docs/architecture.md` and `docs/roadmap.md` before substantial work. Confirm current branch, code, and tests rather than assuming docs are current.
-- The currently working app is a **WordPress connection-check prototype**. The API content mapper, preview, export, case study and public deployment are **planned, not yet implemented**. The immediate goal is the narrow API-first MVP described in `docs/roadmap.md`.
+- Slice 1 is implemented on `feature/api-import`, pending review: fixed public API/sample import, runtime validation, canonical records and preview. Export, case study, CI and public deployment remain planned. The WordPress prototype remains separate from the primary user experience. Check the current branch against `docs/roadmap.md` before continuing.
 - `feature/wordpress-client` holds the Vitest setup and refactored WordPress authentication modules; they are not yet on `main` as last checked. Preserve that work for the later WordPress connector; do not block the API-first MVP on it.
 
 ### Collaboration
