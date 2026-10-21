@@ -14,12 +14,12 @@ These are shared engineering instructions for Codex and contributors. Keep the N
 
 ### Product and source of truth
 
-SiteLift is a portfolio-quality application for connecting to WordPress, inspecting posts/pages/media, and exporting usable content. The public version is intended for Vercel, with a credential-free demo suitable for potential employers.
+SiteLift is a portfolio-quality **API content integration and exporter** for website and CMS migrations. The MVP imports from a preconfigured public API or sample data, normalizes records, previews content, exports JSON/CSV, and includes a truthful `/case-study` page. WordPress is a later source connector. A public Vercel demo should showcase useful functionality without requiring credentials.
 
 - Stack: Next.js 16 App Router, React 19, TypeScript (strict), Node.js route handlers, pnpm. Prefer native platform features and the current stack; justify dependencies.
 - Read `docs/architecture.md` and `docs/roadmap.md` before substantial work. Confirm current branch, code, and tests rather than assuming docs are current.
-- The currently working app is a **connection-check prototype**. Inspection, export, demo mode, and public deployment are not yet implemented.
-- `feature/wordpress-client` holds the Vitest setup and refactored authentication modules; they are not yet on `main`. These docs can land independently on `main`.
+- The currently working app is a **WordPress connection-check prototype**. The API content mapper, preview, export, case study and public deployment are **planned, not yet implemented**. The immediate goal is the narrow API-first MVP described in `docs/roadmap.md`.
+- `feature/wordpress-client` holds the Vitest setup and refactored WordPress authentication modules; they are not yet on `main` as last checked. Preserve that work for the later WordPress connector; do not block the API-first MVP on it.
 
 ### Collaboration
 
@@ -37,6 +37,8 @@ SiteLift is a portfolio-quality application for connecting to WordPress, inspect
 - Keep WordPress credentials server-side for upstream calls; design their lifecycle explicitly before inspection/export. Do not add persistence by default.
 - Until a separately reviewed design supersedes it, keep the exact configured hostname allowlist, upstream HTTPS, rejection of URL credentials/query/fragment/unexpected ports, preserved subdirectory paths, manual redirects, `no-store`, and a bounded request timeout.
 - The allowlist does not eliminate SSRF or DNS/private-network risks. Do not open this server-side connector to arbitrary hosts without explicit security review.
+- For the new API-first MVP, fetch only explicitly configured, allowlisted public API endpoints. Do not build an arbitrary user-supplied URL proxy or web crawler in the first release. Apply request timeouts, response/record limits and safe normalization.
+- CSV exports must escape quotes and newlines correctly and mitigate spreadsheet-formula injection. Content imported from external APIs remains untrusted.
 - A structurally valid WordPress user response is not authorization to export content. Check permissions and content visibility independently.
 - Do **not** expose the current live connection endpoint on an unrestricted public Vercel deployment. First address admission/access controls, rate limiting, input/response size bounds, environment and logging safeguards. Demo visitors should never need their own WordPress credentials.
 - Do not connect to real WordPress hosts in automated tests or load `.env.local` in CI.
@@ -53,6 +55,6 @@ SiteLift is a portfolio-quality application for connecting to WordPress, inspect
 
 ### Work continuation
 
-- Check `docs/roadmap.md` for the next approved slice; inspect the real implementation before editing.
+- Check `docs/roadmap.md` for the next approved slice; inspect the real implementation before editing. After this documentation is merged, prioritize the API import/preview vertical slice, followed by JSON/CSV export, `/case-study`, and public release. Keep claims about shipped features honest.
 - Prefer moving forward within VS Code/Codex rather than making the human copy code and plans between AI chats. The ChatGPT conversation can independently review GitHub PRs and architectural decisions.
 - Keep `docs/architecture.md` and `docs/roadmap.md` accurate when a PR changes architecture or milestone status.

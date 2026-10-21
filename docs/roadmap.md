@@ -1,61 +1,103 @@
 # SiteLift Roadmap
 
-_Last updated: 2026-10-21. Statuses distinguish verified repository state, local reports and future plans._
+_Last updated: 2026-10-21. This is a plan, not a list of claimed shipped features._
 
-## Product outcome
+## Product direction
 
-A public SiteLift demo deployed to Vercel, with a public GitHub repository that potential employers can inspect. The demo must show realistic inspection and export using sample WordPress content **without asking visitors for credentials**. A live WordPress connection may be restricted to authorised use until its security model is ready.
+**MVP:** A public, credential-free API content mapper and exporter for website/CMS migration. Import structured content from a preconfigured public API or local sample data, normalize it into a portable model, preview records, and export JSON/CSV. Ship alongside a factual `/case-study` page and a readable GitHub repository, deployed on Vercel.
 
-## Current workstream: WordPress connection
+**First major post-launch feature:** User-defined API endpoint import, with inspected JSON structure and configurable field mapping, after an explicit security and CORS/SSRF design review. **Then:** WordPress REST extraction and, where justified, an optional WordPress plugin for custom content. Website crawling is not an initial requirement.
 
-- [x] **Prototype:** create Next.js application, WordPress connection form, trusted-host validation and Application Password authentication check.
-- [x] **Phase 1 (branch only):** add Vitest characterization tests and scripts. Reported 29 passing tests.
-- [x] **Phase 2 (branch only):** extract `validation.ts`, `client.ts` and `errors.ts`. Latest reported local results: 71 tests passing, lint/build passing. An initially missing `tests/server-only.ts` was later committed. These changes are on `feature/wordpress-client`; do not mark merged until a reviewed PR is merged.
-- [ ] **Phase 3.1 (next approved implementation slice):** validate the upstream WordPress authenticated user response.
-- [ ] **Phase 3.2:** improve classification of timeouts, malformed inputs and network/upstream failures with updated tests.
-- [ ] **Phase 3.3:** input and upstream response-size bounds; document server config.
-- [ ] **Phase 3.4:** design endpoint admission and rate limiting before exposing a live connector publicly.
-- [ ] **Phase 3.5:** review network-destination/SSRF and DNS/private-address constraints before broadening the allowlist.
+This pivot explicitly prioritizes getting a useful, defensible product online quickly. See `docs/architecture.md` for design and security boundaries.
 
-## Next approved slice: Phase 3.1
+## Verified existing repository work
 
-**Context:** On `feature/wordpress-client`, `client.ts` currently trusts parseable successful JSON and falls back to the submitted username even for `{}`. Characterization tests preserve that behaviour. The following is an approved *plan*, not implemented work.
+- [x] Next.js/TypeScript initial site and WordPress credential-based connection-check prototype on `main`.
+- [x] Basic trusted-host HTTPS WordPress endpoint on `main`.
+- [x] `AGENTS.md`, architecture and roadmap context added to `main` through reviewed PR #1.
+- [x] Phase 1 characterization tests and Phase 2 WordPress client refactor committed on `feature/wordpress-client` (not on `main` as last checked). Agent reported 71 passing tests, lint and build. Do not infer these checks ran in CI.
+- [ ] Merge or otherwise integrate `feature/wordpress-client` after independent PR review if/when needed for the WordPress connector. **Do not block the API MVP on this work.**
 
-**Acceptance criteria:**
+## New MVP delivery slices - preferred order
 
-1. Read the upstream JSON as `unknown`. Accept only a non-null, non-array object with `id` that is a **positive safe integer**; reject absent, zero, negative, fractional, string, boolean, unsafe and non-finite values.
-2. Invalid JSON, null, arrays, JSON primitives and malformed responses must fail as `INVALID_RESPONSE`.
-3. Return a minimal internal `{ id: number; displayName?: string }` user result. Include `displayName` only for a nonempty trimmed string `name`. Never treat submitted username as evidence of authentication.
-4. Keep the public response shape `{ success, message }`. Successful named user: `Connected successfully as <display name>!`; valid user without a display name: `Connected successfully to WordPress!`. Do not expose user IDs, credentials or upstream bodies.
-5. Map `INVALID_RESPONSE` to HTTP **502** with fixed message: `WordPress returned an invalid authentication response.` This intentionally changes the old catch-all 400 for malformed upstream responses; keep other mappings unchanged for now.
-6. Preserve endpoint, hostname policy, HTTPS, WordPress subdirectories, Basic auth, manual redirect refusal, `no-store`, 10-second timeout and injectable fetch.
-7. Update old characterization tests deliberately; add tests for valid IDs including `Number.MAX_SAFE_INTEGER`, malformed/unsafe IDs, blank/invalid names, response shapes, and sanitization. Ensure fixtures for successful subdirectory checks contain valid IDs. Test non-finite values carefully: JSON.stringify encodes Infinity as null.
-8. Do not modify unrelated modules or add dependencies, sessions, storage, new features or commits directly to `main`.
+### Slice 1: Working content import and preview
 
-**Suggested execution within VS Code/Codex:** Inspect current files and tests; implement and test this slice in `feature/wordpress-client`; run `pnpm test:ci`, `pnpm lint`, `pnpm build`; review diff and commit to feature branch; open PR for human review when the workstream is ready. Only ask for a decision if scope/security tradeoffs exceed these criteria. Never merge autonomously.
+- [ ] Define a **minimal typed SiteLift content schema**, including source identity, title, body and optional metadata; document version and missing-value policy.
+- [ ] Choose **one reliable, fixed public content API** with meaningful record data. Use a hardcoded/configured API origin and safe query parameters; no arbitrary URL fetching.
+- [ ] Include a clearly labelled bundled sample dataset so the app remains demonstrable without third-party uptime.
+- [ ] Build a simple, useful source-selection interface and trigger import.
+- [ ] Fetch a **bounded** number of records with timeout, no redirect following, response-size checks and safe validation.
+- [ ] Convert the source response to the canonical schema and display useful records with empty/loading/failure states.
+- [ ] Write focused tests for schema normalization, API error handling and route behaviour; run lint/build.
+- [ ] Open a reviewable PR. Prefer one coherent vertical slice over excessive infrastructure work.
 
-## Follow-on milestones
+**Acceptance:** A visitor can open SiteLift, choose public API or sample data, import and see normalized content. No credentials required, no unrestricted fetch proxy.
 
-### A. Git and developer experience
-- [ ] Add CI to run tests, lint and build on pull requests.
-- [ ] Configure required passing checks on the protected default branch, once CI is reliable.
-- [ ] Replace starter README with quickstart, security model, screenshots/preview and architecture links.
+### Slice 2: Useful portable exports
 
-### B. Public demo and inspection
-- [ ] Define fixed, non-sensitive sample WordPress data and a clearly marked demo mode.
-- [ ] Implement paginated post/page/media inventory with useful previews, from demo data first.
-- [ ] Define and test JSON export format; add bounded media export only after resource and safety review.
+- [ ] Download normalized records as versioned JSON with source metadata.
+- [ ] Download deterministic, UTF-8 CSV with safe quotes/newlines, defined handling of nested data, and spreadsheet-formula injection protection.
+- [ ] Show counts and export success/failure, and test escaping, empty datasets, unsafe strings and bounds.
+- [ ] Open PR, review and verify download manually in the browser.
 
-### C. Live integration and launch
-- [ ] Define secure connection lifecycle and WordPress permissions for content access.
-- [ ] Complete admission, rate limiting, SSRF and input/output limits for any publicly reachable live endpoint.
-- [ ] Deploy a usable credential-free demo to Vercel; verify production behaviour and failure handling.
-- [ ] Prepare public portfolio presentation and clean GitHub documentation.
+**Acceptance:** Imported content can be downloaded and inspected in a normal JSON viewer or Excel-compatible spreadsheet.
 
-## Definition of done for each slice
+### Slice 3: Portfolio case study
 
-- Clear acceptance criteria; focused, maintainable code.
-- Tests added/updated for intended behaviour; security regression coverage where relevant.
-- `pnpm test:ci`, `pnpm lint`, and `pnpm build` run or skipped with explicit reason.
-- Updated docs if behaviour/architecture changed.
-- Branch and PR reviewed; user approves any merge to `main`.
+- [ ] Create responsive `/case-study` page and link it prominently from the home page.
+- [ ] Explain the **actual** purpose and user workflow, show a small architecture diagram, list technology roles, decisions and trade-offs.
+- [ ] Include real testing/security decisions and limitations, GitHub link and live demo CTA.
+- [ ] Explicitly distinguish implemented vs planned integrations. Don't claim metrics, features or outcomes without evidence.
+- [ ] Consider a screenshot of the working UI once available.
+
+**Acceptance:** Someone evaluating the developer can learn what SiteLift does and why key technical decisions were made in a couple of minutes.
+
+### Slice 4: Public release
+
+- [ ] GitHub Actions CI for `pnpm test:ci`, `pnpm lint`, `pnpm build`.
+- [ ] Update README with use case, screenshots, local setup, commands, architecture links, API limitations and live demo.
+- [ ] Verify live API controls, bounded imports/exports, rate limiting/admission as appropriate, handling of secrets and deploy configuration.
+- [ ] Deploy to Vercel; confirm functional UI, public API mode, fixture fallback, downloads and case study.
+- [ ] Add project link to portfolio/job applications after live verification.
+
+**Acceptance:** Employers can open SiteLift and immediately try a complete import-preview-export flow and read the case study.
+
+## Subsequent work, not MVP blockers
+
+### First priority after launch: User-defined API endpoints
+
+- [ ] Design a safe custom endpoint workflow that does not expose unrestricted server-side fetching, including SSRF/DNS rebinding protections, allowed protocols, redirects, timeouts, rate limits and payload/record caps.
+- [ ] Support user-entered public JSON API URLs once the security model is approved; document browser-CORS limitations and decide whether browser-only or server-assisted fetching is appropriate.
+- [ ] Inspect response shapes and let users map source fields into SiteLift's canonical content schema, with mapping validation and meaningful errors.
+- [ ] Keep imports bounded and exports compatible with the existing JSON/CSV pipeline; include tests and a worked case-study example.
+
+### WordPress integration
+
+- [ ] Review/merge or reuse tested modules from `feature/wordpress-client`.
+- [ ] Finish approved WordPress Phase 3.1 user response validation (positive safe integer ID, safe display name and sanitized 502 for invalid upstream data).
+- [ ] Support published posts/pages through WordPress public REST API first, without requiring credentials for public endpoints.
+- [ ] Add authenticated extraction only after connection lifecycle, permission checks, rate limits, request/response bounds and SSRF/network review.
+- [ ] Consider WordPress plugin only for genuinely missing REST functionality: ACF/CPT/custom relationships, complex block content or a controlled site-originated export.
+
+### Broader migration ambitions
+
+- [ ] Additional source APIs and eventually destination-specific exports or integrations.
+- [ ] Optional structured content ZIP with manifest and image URL CSV inventory; initially reference image URLs rather than downloading every asset.
+- [ ] Optional HTML crawl/scraper with URL/network controls, robots/access/rights policy, pagination, concurrency and budget limits.
+- [ ] Editable field mapping if actual users need more than predefined mappings.
+
+## How Codex should continue
+
+1. Confirm current branch and inspect relevant code, `AGENTS.md` and `docs/architecture.md`.
+2. After this documentation PR is merged, work on a **new branch from up-to-date main** for Slice 1. Do not let unmerged WordPress auth changes prevent progress.
+3. For a clear, approved slice, make reasonable minor implementation decisions, implement, test and present results without requiring intermediary prompts from another AI.
+4. Ask the human before broadening scope, changing external-access security assumptions or deploying publicly.
+5. Create a PR for human review; do not merge it autonomously. The ChatGPT conversation can independently review GitHub PRs.
+
+## Definition of done
+
+- Fits the agreed slice and acceptance criteria.
+- Tests cover the important failure modes; lint/build results are reported accurately.
+- Documentation and case study claims describe implemented features only.
+- No unexpected secrets, dependencies, public fetch capabilities or unrelated file changes.
+- Work is available on a feature branch with a PR; merge only with owner approval.
