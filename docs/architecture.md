@@ -24,28 +24,63 @@ The first release imports structured records from a supported public API, transf
 
 A single good end-to-end source integration is enough to ship the first release. User-defined API endpoints and editable field mapping are the **first major post-launch workstream**; multiple additional connectors, accounts, databases, ZIP packaging and remote destination APIs are later, not MVP blockers.
 
-## Current implementation (repository state)
+## Current implementation (Slice 1 on feature/api-import, pending review)
 
 - Next.js 16.4.2 App Router, React 19.3, TypeScript strict, pnpm.
-- `src/app/page.tsx` renders the initial WordPress connection-check form `src/components/WordPressConnection.tsx`.
-- `POST /api/wordpress/connect` checks a WordPress Application Password through `wp-json/wp/v2/users/me` using a trusted hostname and server-side Basic authentication.
-- `feature/wordpress-client` (unmerged as last checked) contains Vitest and refactored validation, WordPress client and safe error mapping modules. Local agent reported 71 passing tests plus passing lint/build at Phase 2; verify in the current branch before relying on this.
-- No content imports, preview, export, case-study route, Vercel deployment or public demo currently exist. Do not describe proposed features as implemented.
+- The home page is an import workbench with source selection, bounded imports, readable/JSON record previews, filtering, a source-to-target mapping and loading/success/empty/error states. Export is visibly marked as coming next.
+- `POST /api/import` supports a fixed JSONPlaceholder posts endpoint and six deterministic bundled samples. Live synthetic API results and sample content have separate provenance labels. There is no automatic sample substitution after errors.
+- An independent Vitest setup was added from main for this slice. It does not incorporate the WordPress feature branch's implementation or test files.
+- The original `POST /api/wordpress/connect` and unused connection form remain unchanged. `feature/wordpress-client` is preserved separately for the later connector. Neither is needed by the new workbench.
+- JSON/CSV export, `/case-study`, CI and public Vercel deployment remain planned.
 
-The unmerged WordPress integration is **preserved as future connector work**, not deleted or required to finish the new public API MVP. Continue MVP development on a separate feature branch from an up-to-date `main`. Coordinate any future cherry-picks or merges explicitly.
+## Slice 1 data flow and responsibilities
 
-## Proposed MVP technical shape
+```text
+Workbench -> POST /api/import -> fixed source fetch or bundled samples
+                             -> runtime validation -> normalization
+          <- schema v1 records + explicit source provenance
+          -> plain-text preview / JSON / mapping
+```
 
-Keep the implementation small and testable, avoiding a speculative plugin framework.
+- `src/lib/content/model.ts`: shared canonical types, source labels, limits and documented field mapping.
+- `src/lib/content/import.ts`: validates the small source/limit request and selects the source. The fixed live endpoint uses injectable fetch; samples bypass outbound networking.
+- `src/lib/content/read-json.ts`: reads bounded UTF-8 JSON streams, enforces actual bytes rather than trusting Content-Length, and cancels a stream when its deadline expires.
+- `src/lib/content/normalize.ts`: pure runtime record validation and transformation. Extra source fields are discarded; invalid records or duplicate identities fail the batch instead of silently losing data.
+- `src/lib/content/errors.ts`: stable internal codes and fixed public messages/statuses. Raw body content and original exceptions are never attached to public failures.
+- `src/app/api/import/route.ts`: JSON request/response handling, ingress bounds and HTTP errors.
+- `src/components/ImportWorkbench.tsx`: in-memory import state and interaction; `ContentPreview.tsx` renders strings using React text escaping. Imported content never enters `dangerouslySetInnerHTML`.
 
-- **UI:** Next.js App Router frontend with source selection, import state, normalized record preview, export control and a static case-study route.
-- **Source adapters:** begin with one explicitly configured public provider and one local fixture source. Implement source-specific fetching and normalization behind a small, typed interface only when a real second source justifies it.
-- **Server boundary:** a controlled route handler for external API calls if needed. Never accept arbitrary fetchable URLs in the publicly deployed API.
-- **Canonical content model:** define a small, versionable schema suitable for migration (for example source identity, title, body, URL, publication data and media references when available). The precise schema and null/missing-value policy must be settled through an implementation task and tests.
-- **Exports:** JSON as canonical format; CSV as portable tabular projection with clearly defined escaping, encoding, nulls and nested-field handling. Keep outputs bounded and deterministic.
-- **Testing:** synthetic fixtures, mocked `fetch`, integration/route tests, serialization tests; no dependency on live APIs for CI.
+The server-only marker protects import/network modules. Vitest aliases the marker only in its own configuration and disables environment-file loading. No runtime packages, infrastructure, storage or sessions are added. Vitest is the only direct development dependency added for this slice.
 
-Avoid requiring an external service for the site's basic demonstrability: use deterministic fixture data and mark it clearly as demo/sample content. Real API integration must be distinguishable from fixture mode.
+There are two explicit source branches, rather than a connector framework. Both currently produce the same post shape. A future provider can supply its own validator/normalizer and return the existing `ImportResult`; the UI need not know its raw schema. Add a shared adapter interface only when a real connector needs it.
+
+## Canonical schema v1
+
+An import result contains `schemaVersion: 1`, `source: { id, label, kind }` and `records`. Source kind is `live` or `sample`; it describes retrieval, not whether editorial content is real. JSONPlaceholder itself serves synthetic example content.
+
+| Record field | Meaning and missing-value policy |
+| --- | --- |
+| `id` | Namespaced stable identity, such as `jsonplaceholder:7` or `sample:7`. |
+| `sourceRecordId` | Positive safe integer source ID converted to a string. |
+| `title` | Required nonempty trimmed string; source field capped at 500 characters. |
+| `slug` | Derived lowercase ASCII text, capped at 80 characters; `record-<source ID>` when no ASCII text remains. Not guaranteed unique. |
+| `body` | Required string; source field capped at 20,000 characters. CRLF/CR become LF and outer whitespace is trimmed. Empty body remains empty. |
+| `bodyFormat` | Always `plain-text` in Slice 1. Source HTML is displayed literally. |
+| `authorId` | Stringified positive safe integer, or `null` when absent/null. Invalid supplied IDs reject the record. |
+| `sourceUrl` | Fixed provider resource URL built from the validated numeric ID; `null` for samples. Never taken from untrusted URL fields. |
+
+Source order is retained. No publication dates, media or author names are fabricated. Slugs are preview metadata, not destination routes. Exports can later serialize this versioned result without revisiting source fetching.
+
+## Source decision and bounds
+
+[JSONPlaceholder](https://jsonplaceholder.typicode.com/) is a simple public REST API without signup or keys. Its post identity, author ID, title and body are enough to demonstrate migration-style modelling. A checked live request confirmed the `_limit` parameter. Its data is synthetic and it supplies no uptime guarantee; bundled samples keep the demonstration usable without the external service.
+
+- Request: only `source` (`sample` or `jsonplaceholder`) and integer `limit` (1-24); unknown keys are rejected, with no URL override.
+- Only outbound endpoint: HTTPS `jsonplaceholder.typicode.com/posts`, with server-built `_limit`. GET, `redirect: manual`, `cache: no-store`; no caller headers or credentials forwarded.
+- Request JSON: maximum 1 KiB, five-second read deadline. Upstream JSON: maximum 256 KiB of decoded body bytes, ten-second deadline including streaming. Vercel route duration: 20 seconds.
+- JSON Content-Type is required. Actual streamed bytes and record counts are checked even when response headers lie. An oversized or invalid response fails safely.
+- HTTP errors: 400 invalid requests, 408 ingress timeout, 413 oversized requests, 502 upstream HTTP/network/schema/size failures, 504 upstream timeout, 500 unexpected failures. All responses carry `Cache-Control: no-store`.
+- No persistence, authentication, or rate-limiting infrastructure. Public deployment still requires the security gates below; bounds alone are not admission control.
 
 ## Case study design
 
