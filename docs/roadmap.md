@@ -6,7 +6,7 @@ _Last updated: 2026-10-21. This is a plan, not a list of claimed shipped feature
 
 **MVP:** A public, credential-free API content mapper and exporter for website/CMS migration. Import structured content from a preconfigured public API or local sample data, normalize it into a portable model, preview records, and export JSON/CSV. Ship alongside a factual `/case-study` page and a readable GitHub repository, deployed on Vercel.
 
-**Next:** Additional API connectors and WordPress REST extraction, then possibly a WordPress plugin for advanced/custom content. Website crawling and arbitrary API endpoints are not first-release requirements.
+**First major post-launch feature:** User-defined API endpoint import, with inspected JSON structure and configurable field mapping, after an explicit security and CORS/SSRF design review. **Then:** WordPress REST extraction and, where justified, an optional WordPress plugin for custom content. Website crawling is not an initial requirement.
 
 This pivot explicitly prioritizes getting a useful, defensible product online quickly. See `docs/architecture.md` for design and security boundaries.
 
@@ -63,6 +63,13 @@ This pivot explicitly prioritizes getting a useful, defensible product online qu
 **Acceptance:** Employers can open SiteLift and immediately try a complete import-preview-export flow and read the case study.
 
 ## Subsequent work, not MVP blockers
+
+### First priority after launch: User-defined API endpoints
+
+- [ ] Design a safe custom endpoint workflow that does not expose unrestricted server-side fetching, including SSRF/DNS rebinding protections, allowed protocols, redirects, timeouts, rate limits and payload/record caps.
+- [ ] Support user-entered public JSON API URLs once the security model is approved; document browser-CORS limitations and decide whether browser-only or server-assisted fetching is appropriate.
+- [ ] Inspect response shapes and let users map source fields into SiteLift's canonical content schema, with mapping validation and meaningful errors.
+- [ ] Keep imports bounded and exports compatible with the existing JSON/CSV pipeline; include tests and a worked case-study example.
 
 ### WordPress integration
 
