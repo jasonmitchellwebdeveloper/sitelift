@@ -6,7 +6,7 @@ _Last updated: 2026-10-21. Decisions and proposed behaviour are identified separ
 
 **SiteLift is an API content integration and export tool for website and CMS migration.**
 
-The first release imports structured records from a supported public API, transforms them into a consistent content model, previews them and exports JSON or CSV. The longer-term direction is a connector-based migration platform: WordPress and other CMS sources first, then possibly destination integrations. A general-purpose website scraper/archive is **not** part of the first release.
+The first release imports structured records from a supported public API, transforms them into a consistent content model, previews them and exports JSON or CSV. The first priority after public release is user-defined API endpoint import with schema inspection and field mapping, subject to a specific network-security design. WordPress and other CMS sources follow, then possibly destination integrations. A general-purpose website scraper/archive is **not** part of the first release.
 
 **Primary product promise:** Import. Transform. Export.
 
@@ -22,7 +22,7 @@ The first release imports structured records from a supported public API, transf
 6. Export the normalized content as JSON or CSV with predictable column/field semantics.
 7. Navigate to `/case-study` for the purpose, technology stack, architecture, decisions, tests, constraints and real implementation status.
 
-A single good end-to-end source integration is enough to ship the first release. Editable mapping, multiple live API sources, accounts, databases, ZIP packaging and remote destination APIs are follow-on work, not blockers.
+A single good end-to-end source integration is enough to ship the first release. User-defined API endpoints and editable field mapping are the **first major post-launch workstream**; multiple additional connectors, accounts, databases, ZIP packaging and remote destination APIs are later, not MVP blockers.
 
 ## Current implementation (repository state)
 
